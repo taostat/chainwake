@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64" fill="none">
+  <defs><mask id="m-bm-pulse-ink" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+    <rect x="0" y="0" width="64" height="64" fill="#fff"></rect>
+    <path d="M-4 28 H20 L25 28 L29.5 19 L35 40 L39 28 H68" fill="none" stroke="#000" stroke-width="5.6" stroke-linejoin="round" stroke-linecap="butt"></path>
+  </mask></defs>
+  <path d="M 5.29 35.87 Q 3 32 5.29 28.13 L 16.71 8.87 Q 19 5 23.50 5.00 L 40.50 5.00 Q 45 5 47.29 8.87 L 58.71 28.13 Q 61 32 58.71 35.87 L 47.29 55.13 Q 45 59 40.50 59.00 L 23.50 59.00 Q 19 59 16.71 55.13 Z" fill="#16181A" mask="url(#m-bm-pulse-ink)"></path>
+</svg>

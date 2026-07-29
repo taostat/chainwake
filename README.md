@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/taostat/chainwake/main/docs/assets/blockmachine-logo.svg" alt="Blockmachine pulse block logo" width="112">
+</p>
+
 # Blockmachine Chainwake
 
 <!-- mcp-name: io.github.taostat/chainwake -->
