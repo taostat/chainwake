@@ -1,0 +1,29 @@
+title = "Chainwake Gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Canonical DAI contract address in output fixtures"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+regexes = [
+  '''token_address["']?\s*[:=]\s*["']0x6b175474e89094c44da98b954eedeac495271d0f["']''',
+]
+paths = [
+  '''^tests/unit/primitives/test_threshold\.py$''',
+  '''^tests/unit/test_output_schema\.py$''',
+]
+
+[[allowlists]]
+description = "Documented non-secret Slack webhook placeholder"
+targetRules = ["slack-webhook-url"]
+condition = "AND"
+regexTarget = "match"
+regexes = [
+  '''https://hooks\.slack\.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX''',
+]
+paths = [
+  '''^docs/adapters\.md$''',
+]

@@ -1,0 +1,29 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: ruff-format
+        name: ruff format --check
+        entry: uv run ruff format --check --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: ty-check
+        name: ty check
+        entry: uv run ty check
+        language: system
+        pass_filenames: false
+        types_or: [python, pyi]
+
+      - id: forbid-async-subtensor
+        name: forbid bittensor.core.async_subtensor import
+        entry: bash -c '! grep -rn "from bittensor.core.async_subtensor" chainwake tests scripts 2>/dev/null'
+        language: system
+        pass_filenames: false

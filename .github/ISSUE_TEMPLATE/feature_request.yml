@@ -1,0 +1,43 @@
+name: Feature request
+description: Propose a concrete Chainwake use case or integration.
+title: "feature: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: use-case
+    attributes:
+      label: User need
+      description: What are users trying to monitor or automate, and why?
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Proposed behavior
+      description: Describe inputs, expected events or outputs, and failure behavior.
+    validations:
+      required: true
+  - type: input
+    id: chain
+    attributes:
+      label: Chain, protocol, or backend
+      placeholder: "For example: Base, BNB Chain, PostgreSQL"
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: scope
+    attributes:
+      label: Additional context
+      description: Link public specifications or sample payloads. Do not include credentials or private data.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched existing issues and proposals.
+          required: true
+        - label: I described a user outcome, not only an implementation preference.
+          required: true

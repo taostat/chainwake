@@ -1,0 +1,44 @@
+name: integration
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          version: "0.11.33"
+
+      - name: Sync deps
+        run: uv sync --locked --dev
+
+      - name: Boot integration chains
+        run: |
+          uv run python -c \
+            "from tests.integration.harness.local_chain import compose_up; compose_up()"
+          {
+            echo "CHAINWAKE_REUSE_NODE=1"
+            echo "CHAINWAKE_ETH_INTEGRATION_RPC_URL=ws://127.0.0.1:8545"
+            echo "CHAINWAKE_BSC_INTEGRATION_RPC_URL=ws://127.0.0.1:8546"
+          } >> "$GITHUB_ENV"
+
+      - name: Integration tests
+        run: uv run pytest -m integration
+
+      - name: Teardown
+        if: always()
+        run: docker compose -f tests/integration/docker/docker-compose.subtensor.yml down -v

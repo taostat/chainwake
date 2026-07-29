@@ -1,0 +1,8 @@
+manifest_version: 1
+name: blockmachine-chainwake
+version: 0.5.0
+description: Blockmachine Chainwake — event-driven chain monitoring for agents.
+author: Blockmachine
+kind: standalone
+hooks:
+  - pre_llm_call

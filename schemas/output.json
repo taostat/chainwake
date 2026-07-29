@@ -1,0 +1,1465 @@
+{
+  "$defs": {
+    "AuthErrorPayload": {
+      "additionalProperties": false,
+      "description": "Authentication failure \u2014 chain rejected the request as unauthenticated.\n\nSpec \u00a79.4 / Appendix D: emitted as its own top-level status (not folded\ninto ``provider_error``) so agents can match the documented spec string\nand so the payload itself carries actionable hints (env-var names, docs\nURL) rather than burying them in the message.",
+      "properties": {
+        "api_key_env_vars": {
+          "description": "Environment variables the user can set to provide an API key.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Api Key Env Vars",
+          "type": "array"
+        },
+        "budget": {
+          "$ref": "#/$defs/Budget"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThresholdCondition"
+            },
+            {
+              "$ref": "#/$defs/DeltaCondition"
+            },
+            {
+              "$ref": "#/$defs/StateCondition"
+            },
+            {
+              "$ref": "#/$defs/LivenessCondition"
+            },
+            {
+              "$ref": "#/$defs/EventCondition"
+            },
+            {
+              "$ref": "#/$defs/TxCondition"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Condition"
+        },
+        "docs_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Link to provider signup / API-key documentation.",
+          "title": "Docs Url"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "observed": {
+          "default": null,
+          "title": "Observed",
+          "type": "null"
+        },
+        "process": {
+          "$ref": "#/$defs/Process"
+        },
+        "reason": {
+          "default": "auth_failed",
+          "enum": [
+            "auth_failed",
+            "missing_api_key",
+            "invalid_api_key",
+            "expired_api_key"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "status": {
+          "const": "auth_error",
+          "default": "auth_error",
+          "title": "Status",
+          "type": "string"
+        },
+        "watcher": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Watcher"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "budget",
+        "process",
+        "message"
+      ],
+      "title": "AuthErrorPayload",
+      "type": "object"
+    },
+    "Budget": {
+      "additionalProperties": false,
+      "properties": {
+        "estimated_ru_consumed": {
+          "title": "Estimated Ru Consumed",
+          "type": "integer"
+        },
+        "rpc_calls": {
+          "title": "Rpc Calls",
+          "type": "integer"
+        },
+        "runtime_ms": {
+          "title": "Runtime Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "runtime_ms",
+        "rpc_calls",
+        "estimated_ru_consumed"
+      ],
+      "title": "Budget",
+      "type": "object"
+    },
+    "BudgetExhaustedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "budget": {
+          "$ref": "#/$defs/Budget"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThresholdCondition"
+            },
+            {
+              "$ref": "#/$defs/DeltaCondition"
+            },
+            {
+              "$ref": "#/$defs/StateCondition"
+            },
+            {
+              "$ref": "#/$defs/LivenessCondition"
+            },
+            {
+              "$ref": "#/$defs/EventCondition"
+            },
+            {
+              "$ref": "#/$defs/TxCondition"
+            }
+          ],
+          "title": "Condition"
+        },
+        "observed": {
+          "default": null,
+          "title": "Observed",
+          "type": "null"
+        },
+        "process": {
+          "$ref": "#/$defs/Process"
+        },
+        "reason": {
+          "enum": [
+            "max_ru_reached",
+            "provider_compute_units_exhausted"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "status": {
+          "const": "budget_exhausted",
+          "default": "budget_exhausted",
+          "title": "Status",
+          "type": "string"
+        },
+        "watcher": {
+          "$ref": "#/$defs/Watcher"
+        }
+      },
+      "required": [
+        "watcher",
+        "condition",
+        "budget",
+        "process",
+        "reason"
+      ],
+      "title": "BudgetExhaustedPayload",
+      "type": "object"
+    },
+    "DeltaCondition": {
+      "additionalProperties": false,
+      "properties": {
+        "operator": {
+          "enum": [
+            "drop-pct",
+            "rise-pct",
+            "move-pct"
+          ],
+          "title": "Operator",
+          "type": "string"
+        },
+        "target": {
+          "exclusiveMinimum": 0,
+          "title": "Target",
+          "type": "number"
+        },
+        "window": {
+          "$ref": "#/$defs/Window"
+        }
+      },
+      "required": [
+        "operator",
+        "target",
+        "window"
+      ],
+      "title": "DeltaCondition",
+      "type": "object"
+    },
+    "EventCondition": {
+      "additionalProperties": false,
+      "properties": {
+        "event_type": {
+          "title": "Event Type",
+          "type": "string"
+        },
+        "filters": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Filters",
+          "type": "object"
+        }
+      },
+      "required": [
+        "event_type"
+      ],
+      "title": "EventCondition",
+      "type": "object"
+    },
+    "InternalErrorPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "budget": {
+          "$ref": "#/$defs/Budget"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThresholdCondition"
+            },
+            {
+              "$ref": "#/$defs/DeltaCondition"
+            },
+            {
+              "$ref": "#/$defs/StateCondition"
+            },
+            {
+              "$ref": "#/$defs/LivenessCondition"
+            },
+            {
+              "$ref": "#/$defs/EventCondition"
+            },
+            {
+              "$ref": "#/$defs/TxCondition"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Condition"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "observed": {
+          "default": null,
+          "title": "Observed",
+          "type": "null"
+        },
+        "process": {
+          "$ref": "#/$defs/Process"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "status": {
+          "const": "internal_error",
+          "default": "internal_error",
+          "title": "Status",
+          "type": "string"
+        },
+        "watcher": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Watcher"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "budget",
+        "process",
+        "message",
+        "reason"
+      ],
+      "title": "InternalErrorPayload",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "LivenessCondition": {
+      "additionalProperties": false,
+      "properties": {
+        "duration": {
+          "description": "Duration, e.g. '3epochs', '10m'.",
+          "title": "Duration",
+          "type": "string"
+        },
+        "operator": {
+          "const": "silent-for",
+          "title": "Operator",
+          "type": "string"
+        }
+      },
+      "required": [
+        "operator",
+        "duration"
+      ],
+      "title": "LivenessCondition",
+      "type": "object"
+    },
+    "MatchedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "budget": {
+          "$ref": "#/$defs/Budget"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThresholdCondition"
+            },
+            {
+              "$ref": "#/$defs/DeltaCondition"
+            },
+            {
+              "$ref": "#/$defs/StateCondition"
+            },
+            {
+              "$ref": "#/$defs/LivenessCondition"
+            },
+            {
+              "$ref": "#/$defs/EventCondition"
+            },
+            {
+              "$ref": "#/$defs/TxCondition"
+            }
+          ],
+          "title": "Condition"
+        },
+        "observed": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ObservedThreshold"
+            },
+            {
+              "$ref": "#/$defs/ObservedDelta"
+            },
+            {
+              "$ref": "#/$defs/ObservedState"
+            },
+            {
+              "$ref": "#/$defs/ObservedLiveness"
+            },
+            {
+              "$ref": "#/$defs/ObservedEvent"
+            },
+            {
+              "$ref": "#/$defs/ObservedTx"
+            }
+          ],
+          "title": "Observed"
+        },
+        "process": {
+          "$ref": "#/$defs/Process"
+        },
+        "status": {
+          "const": "matched",
+          "default": "matched",
+          "title": "Status",
+          "type": "string"
+        },
+        "watcher": {
+          "$ref": "#/$defs/Watcher"
+        }
+      },
+      "required": [
+        "watcher",
+        "condition",
+        "budget",
+        "process",
+        "observed"
+      ],
+      "title": "MatchedPayload",
+      "type": "object"
+    },
+    "ObservedDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "block": {
+          "title": "Block",
+          "type": "integer"
+        },
+        "block_hash": {
+          "title": "Block Hash",
+          "type": "string"
+        },
+        "delta": {
+          "title": "Delta",
+          "type": "number"
+        },
+        "delta_pct": {
+          "title": "Delta Pct",
+          "type": "number"
+        },
+        "meta": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "description": "Provider context and source provenance when available.",
+          "title": "Meta",
+          "type": "object"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "previous_value": {
+          "title": "Previous Value",
+          "type": "number"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "path",
+        "value",
+        "previous_value",
+        "delta",
+        "delta_pct",
+        "block",
+        "block_hash",
+        "timestamp"
+      ],
+      "title": "ObservedDelta",
+      "type": "object"
+    },
+    "ObservedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "args": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Args",
+          "type": "object"
+        },
+        "block": {
+          "title": "Block",
+          "type": "integer"
+        },
+        "block_hash": {
+          "title": "Block Hash",
+          "type": "string"
+        },
+        "event_type": {
+          "title": "Event Type",
+          "type": "string"
+        },
+        "extrinsic_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Extrinsic Hash"
+        },
+        "raw_event": {
+          "title": "Raw Event",
+          "type": "string"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_type",
+        "raw_event",
+        "args",
+        "block",
+        "block_hash",
+        "timestamp"
+      ],
+      "title": "ObservedEvent",
+      "type": "object"
+    },
+    "ObservedLiveness": {
+      "additionalProperties": false,
+      "properties": {
+        "block": {
+          "title": "Block",
+          "type": "integer"
+        },
+        "block_hash": {
+          "title": "Block Hash",
+          "type": "string"
+        },
+        "elapsed": {
+          "title": "Elapsed",
+          "type": "string"
+        },
+        "last_seen_block": {
+          "title": "Last Seen Block",
+          "type": "integer"
+        },
+        "last_seen_timestamp": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last Seen Timestamp"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "last_seen_block",
+        "last_seen_timestamp",
+        "elapsed",
+        "block",
+        "block_hash",
+        "timestamp"
+      ],
+      "title": "ObservedLiveness",
+      "type": "object"
+    },
+    "ObservedState": {
+      "additionalProperties": false,
+      "properties": {
+        "block": {
+          "title": "Block",
+          "type": "integer"
+        },
+        "block_hash": {
+          "title": "Block Hash",
+          "type": "string"
+        },
+        "changed_keys": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Changed Keys"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "previous_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Previous Value"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "path",
+        "value",
+        "previous_value",
+        "block",
+        "block_hash",
+        "timestamp"
+      ],
+      "title": "ObservedState",
+      "type": "object"
+    },
+    "ObservedThreshold": {
+      "additionalProperties": false,
+      "properties": {
+        "block": {
+          "title": "Block",
+          "type": "integer"
+        },
+        "block_hash": {
+          "title": "Block Hash",
+          "type": "string"
+        },
+        "meta": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "description": "Provider context and source provenance when available.",
+          "title": "Meta",
+          "type": "object"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "path",
+        "value",
+        "block",
+        "block_hash",
+        "timestamp"
+      ],
+      "title": "ObservedThreshold",
+      "type": "object"
+    },
+    "ObservedTx": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "confirmations": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "effective_gas_price_wei": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "execution_status": {
+              "enum": [
+                "success",
+                "reverted"
+              ],
+              "type": "string"
+            },
+            "gas_used": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "confirmations",
+            "execution_status",
+            "gas_used",
+            "effective_gas_price_wei"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "confirmations"
+                ]
+              },
+              {
+                "required": [
+                  "execution_status"
+                ]
+              },
+              {
+                "required": [
+                  "gas_used"
+                ]
+              },
+              {
+                "required": [
+                  "effective_gas_price_wei"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "properties": {
+        "block": {
+          "title": "Block",
+          "type": "integer"
+        },
+        "block_hash": {
+          "title": "Block Hash",
+          "type": "string"
+        },
+        "confirmations": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmations"
+        },
+        "effective_gas_price_wei": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effective Gas Price Wei"
+        },
+        "execution_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "success",
+                "reverted"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Execution Status"
+        },
+        "finality": {
+          "enum": [
+            "included",
+            "safe",
+            "finalized"
+          ],
+          "title": "Finality",
+          "type": "string"
+        },
+        "gas_used": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gas Used"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "tx_hash": {
+          "title": "Tx Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tx_hash",
+        "finality",
+        "block",
+        "block_hash",
+        "timestamp"
+      ],
+      "title": "ObservedTx",
+      "type": "object"
+    },
+    "Process": {
+      "additionalProperties": false,
+      "properties": {
+        "pid": {
+          "title": "Pid",
+          "type": "integer"
+        },
+        "started_at": {
+          "format": "date-time",
+          "title": "Started At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "pid",
+        "started_at"
+      ],
+      "title": "Process",
+      "type": "object"
+    },
+    "ProviderErrorPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "budget": {
+          "$ref": "#/$defs/Budget"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThresholdCondition"
+            },
+            {
+              "$ref": "#/$defs/DeltaCondition"
+            },
+            {
+              "$ref": "#/$defs/StateCondition"
+            },
+            {
+              "$ref": "#/$defs/LivenessCondition"
+            },
+            {
+              "$ref": "#/$defs/EventCondition"
+            },
+            {
+              "$ref": "#/$defs/TxCondition"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Condition"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "observed": {
+          "default": null,
+          "title": "Observed",
+          "type": "null"
+        },
+        "process": {
+          "$ref": "#/$defs/Process"
+        },
+        "reason": {
+          "enum": [
+            "auth_failed",
+            "rpc_unreachable",
+            "rate_limited",
+            "subscription_failed",
+            "decode_failed"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "status": {
+          "const": "provider_error",
+          "default": "provider_error",
+          "title": "Status",
+          "type": "string"
+        },
+        "watcher": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Watcher"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "budget",
+        "process",
+        "message",
+        "reason"
+      ],
+      "title": "ProviderErrorPayload",
+      "type": "object"
+    },
+    "StateCondition": {
+      "additionalProperties": false,
+      "properties": {
+        "operator": {
+          "enum": [
+            "on-change",
+            "changes-to",
+            "changes-from"
+          ],
+          "title": "Operator",
+          "type": "string"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target"
+        }
+      },
+      "required": [
+        "operator"
+      ],
+      "title": "StateCondition",
+      "type": "object"
+    },
+    "StoppedPayload": {
+      "additionalProperties": false,
+      "description": "A watcher ended because the process received SIGINT or SIGTERM.",
+      "properties": {
+        "budget": {
+          "$ref": "#/$defs/Budget"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThresholdCondition"
+            },
+            {
+              "$ref": "#/$defs/DeltaCondition"
+            },
+            {
+              "$ref": "#/$defs/StateCondition"
+            },
+            {
+              "$ref": "#/$defs/LivenessCondition"
+            },
+            {
+              "$ref": "#/$defs/EventCondition"
+            },
+            {
+              "$ref": "#/$defs/TxCondition"
+            }
+          ],
+          "title": "Condition"
+        },
+        "observed": {
+          "default": null,
+          "title": "Observed",
+          "type": "null"
+        },
+        "process": {
+          "$ref": "#/$defs/Process"
+        },
+        "reason": {
+          "const": "shutdown_requested",
+          "default": "shutdown_requested",
+          "title": "Reason",
+          "type": "string"
+        },
+        "status": {
+          "const": "stopped",
+          "default": "stopped",
+          "title": "Status",
+          "type": "string"
+        },
+        "watcher": {
+          "$ref": "#/$defs/Watcher"
+        }
+      },
+      "required": [
+        "watcher",
+        "condition",
+        "budget",
+        "process"
+      ],
+      "title": "StoppedPayload",
+      "type": "object"
+    },
+    "ThresholdCondition": {
+      "additionalProperties": false,
+      "properties": {
+        "operator": {
+          "enum": [
+            "below",
+            "above"
+          ],
+          "title": "Operator",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "number"
+        }
+      },
+      "required": [
+        "operator",
+        "target"
+      ],
+      "title": "ThresholdCondition",
+      "type": "object"
+    },
+    "TimeoutPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "budget": {
+          "$ref": "#/$defs/Budget"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThresholdCondition"
+            },
+            {
+              "$ref": "#/$defs/DeltaCondition"
+            },
+            {
+              "$ref": "#/$defs/StateCondition"
+            },
+            {
+              "$ref": "#/$defs/LivenessCondition"
+            },
+            {
+              "$ref": "#/$defs/EventCondition"
+            },
+            {
+              "$ref": "#/$defs/TxCondition"
+            }
+          ],
+          "title": "Condition"
+        },
+        "observed": {
+          "default": null,
+          "title": "Observed",
+          "type": "null"
+        },
+        "process": {
+          "$ref": "#/$defs/Process"
+        },
+        "reason": {
+          "const": "max_runtime_reached",
+          "title": "Reason",
+          "type": "string"
+        },
+        "status": {
+          "const": "timeout",
+          "default": "timeout",
+          "title": "Status",
+          "type": "string"
+        },
+        "watcher": {
+          "$ref": "#/$defs/Watcher"
+        }
+      },
+      "required": [
+        "watcher",
+        "condition",
+        "budget",
+        "process",
+        "reason"
+      ],
+      "title": "TimeoutPayload",
+      "type": "object"
+    },
+    "TxCondition": {
+      "additionalProperties": false,
+      "properties": {
+        "confirmations": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmations"
+        },
+        "finality": {
+          "enum": [
+            "included",
+            "safe",
+            "finalized"
+          ],
+          "title": "Finality",
+          "type": "string"
+        },
+        "timeout": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timeout"
+        }
+      },
+      "required": [
+        "finality"
+      ],
+      "title": "TxCondition",
+      "type": "object"
+    },
+    "UserErrorPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "budget": {
+          "$ref": "#/$defs/Budget"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThresholdCondition"
+            },
+            {
+              "$ref": "#/$defs/DeltaCondition"
+            },
+            {
+              "$ref": "#/$defs/StateCondition"
+            },
+            {
+              "$ref": "#/$defs/LivenessCondition"
+            },
+            {
+              "$ref": "#/$defs/EventCondition"
+            },
+            {
+              "$ref": "#/$defs/TxCondition"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Condition"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "observed": {
+          "default": null,
+          "title": "Observed",
+          "type": "null"
+        },
+        "process": {
+          "$ref": "#/$defs/Process"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "status": {
+          "const": "user_error",
+          "default": "user_error",
+          "title": "Status",
+          "type": "string"
+        },
+        "watcher": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Watcher"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "budget",
+        "process",
+        "message",
+        "reason"
+      ],
+      "title": "UserErrorPayload",
+      "type": "object"
+    },
+    "Watcher": {
+      "additionalProperties": false,
+      "properties": {
+        "chain": {
+          "enum": [
+            "bt",
+            "eth",
+            "base",
+            "bsc"
+          ],
+          "title": "Chain",
+          "type": "string"
+        },
+        "invocation": {
+          "description": "Original argv as invoked.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Invocation",
+          "type": "array"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "primitive": {
+          "enum": [
+            "threshold",
+            "delta",
+            "event",
+            "liveness",
+            "state",
+            "tx"
+          ],
+          "title": "Primitive",
+          "type": "string"
+        },
+        "resource": {
+          "title": "Resource",
+          "type": "string"
+        },
+        "resource_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resource Id"
+        },
+        "sub_resource": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sub Resource"
+        }
+      },
+      "required": [
+        "chain",
+        "resource",
+        "primitive",
+        "invocation"
+      ],
+      "title": "Watcher",
+      "type": "object"
+    },
+    "Window": {
+      "additionalProperties": false,
+      "properties": {
+        "unit": {
+          "enum": [
+            "ever",
+            "time",
+            "blocks",
+            "epochs"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "value": {
+          "description": "Window length ('1h', '50', '5') or 'watcher-start' for the unbounded ever baseline.",
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "unit",
+        "value"
+      ],
+      "title": "Window",
+      "type": "object"
+    }
+  },
+  "$id": "https://chainwake.dev/schemas/output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "discriminator": {
+    "mapping": {
+      "auth_error": "#/$defs/AuthErrorPayload",
+      "budget_exhausted": "#/$defs/BudgetExhaustedPayload",
+      "internal_error": "#/$defs/InternalErrorPayload",
+      "matched": "#/$defs/MatchedPayload",
+      "provider_error": "#/$defs/ProviderErrorPayload",
+      "stopped": "#/$defs/StoppedPayload",
+      "timeout": "#/$defs/TimeoutPayload",
+      "user_error": "#/$defs/UserErrorPayload"
+    },
+    "propertyName": "status"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/MatchedPayload"
+    },
+    {
+      "$ref": "#/$defs/TimeoutPayload"
+    },
+    {
+      "$ref": "#/$defs/StoppedPayload"
+    },
+    {
+      "$ref": "#/$defs/BudgetExhaustedPayload"
+    },
+    {
+      "$ref": "#/$defs/UserErrorPayload"
+    },
+    {
+      "$ref": "#/$defs/ProviderErrorPayload"
+    },
+    {
+      "$ref": "#/$defs/AuthErrorPayload"
+    },
+    {
+      "$ref": "#/$defs/InternalErrorPayload"
+    }
+  ],
+  "title": "chainwake output payload"
+}

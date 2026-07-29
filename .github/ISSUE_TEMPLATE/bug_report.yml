@@ -1,0 +1,71 @@
+name: Bug report
+description: Report a reproducible problem in Chainwake.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Chainwake. Never include private keys, tokens,
+        credentials, or complete authenticated RPC URLs.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened, and what impact did it have?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide the smallest commands, configuration, and inputs that reproduce the issue.
+      placeholder: |
+        1. Configure ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Chainwake version or commit
+      placeholder: "chainwake --version, package version, or commit SHA"
+    validations:
+      required: true
+  - type: input
+    id: chain
+    attributes:
+      label: Chain and RPC provider
+      description: Name the network and provider, but redact credentials and authenticated URL components.
+      placeholder: "Ethereum mainnet via provider name"
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS, Python version, Docker version if relevant, and installation method.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Redacted logs or traceback
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched existing issues for a duplicate.
+          required: true
+        - label: I removed credentials, private keys, tokens, and authenticated RPC URLs.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true

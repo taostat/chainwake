@@ -1,0 +1,40 @@
+networks:
+  chainwake-subtensor-net:
+    name: chainwake-subtensor-net
+    driver: bridge
+
+services:
+  anvil:
+    # Official Foundry v1.7.1 multi-arch image, pinned by release and digest.
+    image: ghcr.io/foundry-rs/foundry:v1.7.1@sha256:8347b728d5d393dac1c018691b36f506d23b9dcd78341d40ea0fcb11c3a19cdd
+    container_name: chainwake-anvil
+    entrypoint: ["anvil"]
+    command: ["--host", "0.0.0.0", "--port", "8545", "--chain-id", "1", "--no-mining"]
+    ports:
+      - "8545:8545"
+    networks:
+      chainwake-subtensor-net:
+        aliases: ["anvil"]
+
+  bsc-anvil:
+    # Same pinned Anvil runtime, configured with BSC mainnet's chain identity.
+    image: ghcr.io/foundry-rs/foundry:v1.7.1@sha256:8347b728d5d393dac1c018691b36f506d23b9dcd78341d40ea0fcb11c3a19cdd
+    container_name: chainwake-bsc-anvil
+    entrypoint: ["anvil"]
+    command: ["--host", "0.0.0.0", "--port", "8545", "--chain-id", "56", "--no-mining"]
+    ports:
+      - "8546:8545"
+    networks:
+      chainwake-subtensor-net:
+        aliases: ["bsc-anvil"]
+
+  subtensor:
+    # Official spec-440 build, pinned by source commit and multi-arch digest.
+    image: ${LOCALNET_IMAGE_NAME:-ghcr.io/raofoundation/subtensor-localnet:sha-e4ffa2e1325c6c7db618dbceaf396310a170990c@sha256:645b7e0772cc7c062b8e46f9ddd8b3b6a3106e3e3683bf2e4fdc5caac219bc67}
+    container_name: chainwake-subtensor-localnet
+    command: ["${FAST_BLOCKS:-True}"]
+    ports:
+      - "9944:9944"
+    networks:
+      chainwake-subtensor-net:
+        aliases: ["subtensor"]

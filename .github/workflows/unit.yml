@@ -1,0 +1,82 @@
+name: unit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality and contract checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          version: "0.11.33"
+          python-version: "3.13"
+
+      - name: Sync deps
+        run: uv sync --locked --dev
+
+      - name: Audit locked runtime dependencies
+        run: |
+          uv export --locked --no-dev --no-emit-project \
+            --output-file /tmp/chainwake-runtime-requirements.txt
+          uvx --from pip-audit==2.10.1 pip-audit \
+            --requirement /tmp/chainwake-runtime-requirements.txt
+
+      - name: Ruff check
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      - name: Forbid production Bittensor SDK imports
+        run: |
+          if grep -rnE '(^|[[:space:]])(from|import)[[:space:]]+bittensor([[:space:].]|$)' chainwake 2>/dev/null; then
+            echo "ERROR: production Bittensor SDK imports are forbidden — use async-substrate-interface directly"
+            exit 1
+          fi
+
+      - name: Type check
+        run: uv run ty check
+
+      - name: Validate JSON schema in sync with Pydantic
+        run: |
+          uv run python scripts/generate_json_schema.py --check
+
+  unit:
+    name: Unit tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          version: "0.11.33"
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+          cache-suffix: py${{ matrix.python-version }}
+
+      - name: Sync deps
+        run: uv sync --locked --dev
+
+      - name: Unit tests
+        run: uv run pytest -m unit -n auto

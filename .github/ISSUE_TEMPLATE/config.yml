@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/taostat/chainwake/blob/main/SECURITY.md
+    about: Report security issues privately; do not open a public issue.
+  - name: Usage and support
+    url: https://github.com/taostat/chainwake/blob/main/SUPPORT.md
+    about: Check the support guide before filing an issue.
