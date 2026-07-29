@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/taostat/chainwake/main/docs/assets/blockmachine-logo.svg" alt="Blockmachine pulse block logo" width="112">
+</p>
+
 # Blockmachine Chainwake
 
 <!-- mcp-name: io.github.taostat/chainwake -->
@@ -245,15 +249,21 @@ part of the stable contract.
 | Method | Precedence | Example |
 |--------|-----------|---------|
 | `--rpc-url` flag | Highest | `--rpc-url wss://my-node:9944` |
-| Env var | Middle | `CHAINWAKE_BT_RPC_URL`, `CHAINWAKE_ETH_RPC_URL` |
-| Anonymous default | Lowest | `wss://rpc.blockmachine.io` (bt), `wss://ethereum-rpc.publicnode.com` (eth) |
+| Env var | Middle | `CHAINWAKE_BT_RPC_URL`, `CHAINWAKE_ETH_RPC_URL`, `CHAINWAKE_BASE_RPC_URL`, `CHAINWAKE_BSC_RPC_URL` |
+| Anonymous default | Lowest | Blockmachine's free WebSocket endpoint for the selected chain |
 
-[Blockmachine](https://blockmachine.io) is the default Bittensor RPC provider;
-the anonymous free tier needs no API key. Any Substrate-compatible WebSocket
-endpoint works. No API key is required for a first watcher. Pass `--api-key`
-(or `CHAINWAKE_BT_API_KEY`) for higher-limit access. Base and BSC default to
-`wss://base-rpc.publicnode.com` and
-`wss://bsc-rpc.publicnode.com`.
+[Blockmachine](https://blockmachine.io) is the default RPC provider for every
+supported chain. Its anonymous free tier needs no API key:
+
+| Chain | Default WebSocket endpoint |
+|-------|----------------------------|
+| Bittensor | `wss://rpc.blockmachine.io` |
+| Ethereum | `wss://rpc-eth.blockmachine.io` |
+| Base | `wss://rpc-base.blockmachine.io` |
+| BSC | `wss://rpc-bsc.blockmachine.io` |
+
+Any compatible WebSocket endpoint works. Pass `--api-key` (or the matching
+`CHAINWAKE_<CHAIN>_API_KEY`) for higher-limit access.
 
 `--max-runtime` accepts `30s`, `10m`, `2h`, `1d`. Default is unbounded.
 Agent and automation calls should always set a bounded runtime.

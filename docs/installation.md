@@ -112,7 +112,7 @@ chainwake eth network base-fee --below 10
 chainwake eth tx 0x0123...abcd --confirmations 3
 ```
 
-The anonymous Ethereum default is `wss://ethereum-rpc.publicnode.com`.
+The anonymous Ethereum default is `wss://rpc-eth.blockmachine.io`.
 
 Base and BSC follow the same pattern:
 
@@ -124,8 +124,8 @@ export CHAINWAKE_BSC_RPC_URL=wss://your-bsc-node.example
 chainwake bsc network gas-price --above 0.1
 ```
 
-Their anonymous defaults are `wss://base-rpc.publicnode.com` and
-`wss://bsc-rpc.publicnode.com`.
+Their anonymous defaults are `wss://rpc-base.blockmachine.io` and
+`wss://rpc-bsc.blockmachine.io`.
 
 ### Optional API key
 
@@ -166,11 +166,11 @@ action. Do not retry unchanged credentials.
 
 ### Blockmachine RPC
 
-Blockmachine (`rpc.blockmachine.io`) is the default provider for Bittensor at
-launch. No API key is required for its anonymous free tier. If Chainwake
-returns a rate-limit error, sign up at
-[blockmachine.io](https://blockmachine.io) and add the issued key with
-`--api-key` or `CHAINWAKE_BT_API_KEY`.
+Blockmachine is the default provider for Bittensor, Ethereum, Base, and BSC.
+No API key is required for its anonymous free tier. If Chainwake returns a
+rate-limit error, sign up at [blockmachine.io](https://blockmachine.io) and add
+the issued key with `--api-key` or the matching
+`CHAINWAKE_<CHAIN>_API_KEY`.
 
 ### No config file
 

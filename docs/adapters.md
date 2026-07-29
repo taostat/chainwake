@@ -216,13 +216,13 @@ channel.
 It looks like:
 
 ```
-https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+https://hooks.slack.com/services/<team_id>/<app_id>/<incoming_webhook_token>
 ```
 
 **3. Derive the apprise URI**
 
 ```
-slack://T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+slack://<team_id>/<app_id>/<incoming_webhook_token>
 ```
 
 Format: `slack://<team_id>/<app_id>/<incoming_webhook_token>`
@@ -230,7 +230,7 @@ Format: `slack://<team_id>/<app_id>/<incoming_webhook_token>`
 **4. Use it**
 
 ```sh
-SLACK_TOKEN=T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+SLACK_TOKEN="<team_id>/<app_id>/<incoming_webhook_token>"
 
 chainwake bt validator 5Fxxx... weights --silent-for 3epochs \
   --out "slack://${SLACK_TOKEN}" \
