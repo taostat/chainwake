@@ -179,8 +179,11 @@ class TestProviderErrorHints:
         assert "rate limit exceeded" in out
         assert "rate-limited" in out.lower()
         assert "retrying" in out.lower()
-        assert "blockmachine.io" in out
-        assert "--api-key" in out
+        assert out.splitlines()[-1] == (
+            "Provider rate-limited the request. Wait before retrying. "
+            "For higher Blockmachine limits, sign up at https://blockmachine.io "
+            "and pass --api-key."
+        )
 
     def test_rpc_unreachable_hint_mentions_url_and_network(self) -> None:
         from chainwake.output.render import render_human  # noqa: PLC0415

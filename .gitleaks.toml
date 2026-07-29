@@ -17,7 +17,7 @@ paths = [
 ]
 
 [[allowlists]]
-description = "Documented non-secret Slack webhook placeholder"
+description = "Historical non-secret Slack webhook placeholder"
 targetRules = ["slack-webhook-url"]
 condition = "AND"
 regexTarget = "match"
