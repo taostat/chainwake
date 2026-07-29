@@ -77,7 +77,7 @@ supervisor environment instead.
 
 Ethereum watcher flags use `CHAINWAKE_ETH_RPC_URL` and
 `CHAINWAKE_ETH_API_KEY`. The anonymous default endpoint is
-`wss://ethereum-rpc.publicnode.com`.
+`wss://rpc-eth.blockmachine.io`.
 
 ### `eth network base-fee` — EIP-1559 base fee
 
@@ -171,7 +171,7 @@ free Demo key in `CHAINWAKE_COINGECKO_API_KEY`. This key is separate from
 ## Base network
 
 Base uses `CHAINWAKE_BASE_RPC_URL` / `CHAINWAKE_BASE_API_KEY`; its anonymous
-default is `wss://base-rpc.publicnode.com`. Blocks arrive about every 2 seconds.
+default is `wss://rpc-base.blockmachine.io`. Blocks arrive about every 2 seconds.
 
 ```sh
 chainwake base network base-fee --above 0.01
@@ -195,7 +195,7 @@ data is finalized. `--confirmations N` is available only with `included`.
 ## BSC network
 
 BSC uses `CHAINWAKE_BSC_RPC_URL` / `CHAINWAKE_BSC_API_KEY`; its anonymous
-default is `wss://bsc-rpc.publicnode.com`. Its current target block cadence is
+default is `wss://rpc-bsc.blockmachine.io`. Its current target block cadence is
 about 0.45 seconds.
 
 ```sh

@@ -67,10 +67,10 @@ def test_root_registers_base_and_bsc_commands() -> None:
 @pytest.mark.parametrize(
     ("chain", "command", "default_rpc"),
     [
-        ("base", "base-fee", "wss://base-rpc.publicnode.com"),
-        ("base", "l1-base-fee", "wss://base-rpc.publicnode.com"),
-        ("base", "l1-blob-base-fee", "wss://base-rpc.publicnode.com"),
-        ("bsc", "gas-price", "wss://bsc-rpc.publicnode.com"),
+        ("base", "base-fee", "wss://rpc-base.blockmachine.io"),
+        ("base", "l1-base-fee", "wss://rpc-base.blockmachine.io"),
+        ("base", "l1-blob-base-fee", "wss://rpc-base.blockmachine.io"),
+        ("bsc", "gas-price", "wss://rpc-bsc.blockmachine.io"),
     ],
 )
 def test_chain_appropriate_fee_commands_build_numeric_watchers(

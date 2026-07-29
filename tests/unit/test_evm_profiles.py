@@ -51,15 +51,18 @@ _HEAD_BLOCK = {
 
 def test_builtin_evm_profiles_are_the_single_chain_capability_source() -> None:
     assert ETHEREUM_PROFILE.chain_id == 1
+    assert ETHEREUM_PROFILE.default_rpc == "wss://rpc-eth.blockmachine.io"
     assert ETHEREUM_PROFILE.block_seconds == 12.0
     assert ETHEREUM_PROFILE.fee_model == EvmFeeModel.EIP1559
 
     assert BASE_PROFILE.chain_id == 8453
+    assert BASE_PROFILE.default_rpc == "wss://rpc-base.blockmachine.io"
     assert BASE_PROFILE.block_seconds == 2.0
     assert BASE_PROFILE.supported_finality_levels == ("included", "safe", "finalized")
     assert BASE_PROFILE.fee_model == EvmFeeModel.OP_STACK
 
     assert BSC_PROFILE.chain_id == 56
+    assert BSC_PROFILE.default_rpc == "wss://rpc-bsc.blockmachine.io"
     assert BSC_PROFILE.block_seconds == 0.45
     assert BSC_PROFILE.supported_finality_levels == ("included", "finalized")
     assert BSC_PROFILE.fee_model == EvmFeeModel.GAS_PRICE
