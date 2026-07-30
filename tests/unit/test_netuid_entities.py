@@ -83,7 +83,21 @@ def test_cli_rejects_out_of_u16_netuid_before_dispatch(argv: list[str]) -> None:
 async def test_nonexistent_subnet_does_not_become_a_legitimate_zero() -> None:
     provider = BittensorProvider()
     substrate = AsyncMock()
-    substrate.query.return_value = _ScaleValue(False)
+
+    async def query(
+        _module: str,
+        storage_fn: str,
+        params: list[object],
+        *,
+        block_hash: str,
+    ) -> _ScaleValue:
+        assert block_hash == "0xblock"
+        assert storage_fn == "NetworksAdded"
+        # Root (netuid 0) reads True — the endpoint is healthy, so the
+        # False for the target netuid is authoritative and fails fast.
+        return _ScaleValue(params[0] == 0)
+
+    substrate.query.side_effect = query
     provider._substrate = cast(AsyncSubstrateInterface, substrate)
     read_price = AsyncMock(return_value=0.0)
     provider._read_subnet_price = read_price

@@ -12,7 +12,7 @@ import asyncio
 from datetime import UTC, datetime
 from hashlib import blake2b
 from typing import Any, cast
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from async_substrate_interface import AsyncSubstrateInterface
@@ -2361,10 +2361,19 @@ class _DynamicInfoSubstrate:
 
 
 class _NetworksAddedSubstrate:
-    """Stand-in returning a fixed ``NetworksAdded`` value for every query."""
+    """Netuid-aware stand-in for ``NetworksAdded`` queries.
 
-    def __init__(self, value: object) -> None:
-        self._value = value
+    Each netuid gets its own ordered value sequence; the last value repeats
+    once its sequence is exhausted, so a test only spells out as many
+    responses as it cares about. Per-netuid call counters let tests assert
+    exactly how often the target and the root canary were each queried.
+    Querying a netuid with no configured sequence raises KeyError so an
+    unexpected read fails loudly.
+    """
+
+    def __init__(self, values: dict[int, list[object]]) -> None:
+        self._values = values
+        self.calls: dict[int, int] = dict.fromkeys(values, 0)
 
     async def query(
         self,
@@ -2374,33 +2383,171 @@ class _NetworksAddedSubstrate:
         block_hash: str = "",
     ) -> object:
         assert storage_fn == "NetworksAdded"
-        return self._value
+        assert params is not None
+        netuid = cast(int, params[0])
+        sequence = self._values[netuid]
+        index = min(self.calls[netuid], len(sequence) - 1)
+        self.calls[netuid] += 1
+        return sequence[index]
 
 
 @pytest.mark.asyncio
-async def test_require_subnet_false_raises_user_error() -> None:
-    """A genuinely unregistered netuid decodes to False, not None."""
+async def test_require_subnet_true_first_read_queries_nothing_else() -> None:
+    """An existing subnet is confirmed by one read — no canary, no backoff."""
     provider = BittensorProvider()
-    provider._substrate = cast(AsyncSubstrateInterface, _NetworksAddedSubstrate(_ScaleType(False)))
+    substrate = _NetworksAddedSubstrate({19: [_ScaleType(True)]})
+    provider._substrate = cast(AsyncSubstrateInterface, substrate)
 
-    with pytest.raises(UserError, match="subnet 19 does not exist"):
-        await provider._require_subnet(19, "0xabc")
+    await provider._require_subnet(19, "0xabc")
+
+    assert substrate.calls == {19: 1}
 
 
 @pytest.mark.asyncio
-async def test_require_subnet_none_raises_rpc_unreachable_not_user_error() -> None:
-    """A dropped/incomplete response must not be mistaken for a missing subnet.
+async def test_require_subnet_false_with_healthy_canary_fails_fast() -> None:
+    """A genuinely unregistered netuid fails immediately when root reads True.
 
-    Regression: under rate limiting, a batched ``NetworksAdded`` query can
-    come back with no result at all rather than raising. Treating that as
-    "subnet does not exist" skips retry/backoff and reports a real subnet
-    as absent.
+    Root (netuid 0) exists on every Subtensor chain, so a True canary proves
+    the endpoint is decoding honestly and the False target read is
+    authoritative — no backoff loop, no sleeps.
     """
     provider = BittensorProvider()
-    provider._substrate = cast(AsyncSubstrateInterface, _NetworksAddedSubstrate(None))
+    substrate = _NetworksAddedSubstrate({19: [_ScaleType(False)], 0: [_ScaleType(True)]})
+    provider._substrate = cast(AsyncSubstrateInterface, substrate)
 
-    with pytest.raises(RPCUnreachableError, match="returned no result"):
+    with (
+        patch("asyncio.sleep", new_callable=AsyncMock) as sleep,
+        pytest.raises(UserError, match="subnet 19 does not exist"),
+    ):
         await provider._require_subnet(19, "0xabc")
+
+    assert substrate.calls == {19: 1, 0: 1}
+    sleep.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_require_subnet_none_with_healthy_canary_fails_fast() -> None:
+    """A dropped read with a healthy canary is an upstream failure, reported at once.
+
+    None never decodes from a completed ``NetworksAdded`` query, so even with
+    a honest endpoint it must surface as RPCUnreachableError (transient) —
+    never as "subnet does not exist".
+    """
+    provider = BittensorProvider()
+    substrate = _NetworksAddedSubstrate({19: [None], 0: [_ScaleType(True)]})
+    provider._substrate = cast(AsyncSubstrateInterface, substrate)
+
+    with (
+        patch("asyncio.sleep", new_callable=AsyncMock) as sleep,
+        pytest.raises(RPCUnreachableError, match="returned no result"),
+    ):
+        await provider._require_subnet(19, "0xabc")
+
+    assert substrate.calls == {19: 1, 0: 1}
+    sleep.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_require_subnet_recovers_under_contention_after_multiple_rechecks() -> None:
+    """A False read with a broken canary is reconfirmed until it turns True.
+
+    Regression: a rate-limited sibling query in the same batch can leave
+    ``NetworksAdded`` decoded to its storage-type default (False) instead of
+    raising, even for a subnet that genuinely exists — reproduced by firing
+    dozens of concurrent watchers against a real anonymous endpoint, where
+    the condition persisted well past a single retry. The loop must keep
+    reconfirming (not just retry once) until the read comes back True.
+    """
+    provider = BittensorProvider()
+    substrate = _NetworksAddedSubstrate(
+        {
+            19: [_ScaleType(False), _ScaleType(False), _ScaleType(False), _ScaleType(True)],
+            0: [_ScaleType(False)],
+        }
+    )
+    provider._substrate = cast(AsyncSubstrateInterface, substrate)
+
+    with patch("asyncio.sleep", new_callable=AsyncMock) as sleep:
+        await provider._require_subnet(19, "0xabc")  # must not raise
+
+    assert substrate.calls == {19: 4, 0: 1}
+    assert sleep.await_count == 3
+
+
+@pytest.mark.asyncio
+async def test_require_subnet_recovers_under_contention_after_none() -> None:
+    """A dropped first read with a broken canary recovers on the next recheck."""
+    provider = BittensorProvider()
+    substrate = _NetworksAddedSubstrate({19: [None, _ScaleType(True)], 0: [None]})
+    provider._substrate = cast(AsyncSubstrateInterface, substrate)
+
+    with patch("asyncio.sleep", new_callable=AsyncMock) as sleep:
+        await provider._require_subnet(19, "0xabc")  # must not raise
+
+    assert substrate.calls == {19: 2, 0: 1}
+    sleep.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_require_subnet_exhaustion_ending_false_raises_user_error() -> None:
+    """After the reconfirm budget, the LAST target read decides: False → missing.
+
+    The initial read is None here, so this also pins the last-read-wins
+    classification: earlier Nones don't turn a final definitive False into
+    an unreachable verdict.
+    """
+    provider = BittensorProvider()
+    substrate = _NetworksAddedSubstrate({19: [None, _ScaleType(False)], 0: [None]})
+    provider._substrate = cast(AsyncSubstrateInterface, substrate)
+
+    with (
+        patch("asyncio.sleep", new_callable=AsyncMock),
+        pytest.raises(UserError, match="subnet 19 does not exist"),
+    ):
+        await provider._require_subnet(19, "0xabc")
+
+    # 1 initial read + 8 reconfirm attempts, plus one canary read.
+    assert substrate.calls == {19: 9, 0: 1}
+
+
+@pytest.mark.asyncio
+async def test_require_subnet_exhaustion_ending_none_raises_rpc_unreachable() -> None:
+    """After the reconfirm budget, the LAST target read decides: None → unreachable.
+
+    The initial read is False here, so earlier Falses don't turn a final
+    dropped read into a "subnet does not exist" verdict.
+    """
+    provider = BittensorProvider()
+    substrate = _NetworksAddedSubstrate({19: [_ScaleType(False), None], 0: [_ScaleType(False)]})
+    provider._substrate = cast(AsyncSubstrateInterface, substrate)
+
+    with (
+        patch("asyncio.sleep", new_callable=AsyncMock),
+        pytest.raises(RPCUnreachableError, match="returned no result"),
+    ):
+        await provider._require_subnet(19, "0xabc")
+
+    # 1 initial read + 8 reconfirm attempts, plus one canary read.
+    assert substrate.calls == {19: 9, 0: 1}
+
+
+@pytest.mark.asyncio
+async def test_require_subnet_root_target_skips_canary() -> None:
+    """When the target IS root there is no more-trustworthy key to check.
+
+    A non-True first read for netuid 0 must go straight to the backoff loop.
+    If a canary read ran, it would consume the True from netuid 0's sequence
+    and raise UserError instead of recovering.
+    """
+    provider = BittensorProvider()
+    substrate = _NetworksAddedSubstrate({0: [_ScaleType(False), _ScaleType(True)]})
+    provider._substrate = cast(AsyncSubstrateInterface, substrate)
+
+    with patch("asyncio.sleep", new_callable=AsyncMock) as sleep:
+        await provider._require_subnet(0, "0xabc")  # must not raise
+
+    assert substrate.calls == {0: 2}
+    sleep.assert_awaited_once()
 
 
 @pytest.mark.asyncio
