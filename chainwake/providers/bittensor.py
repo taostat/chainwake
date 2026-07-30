@@ -930,6 +930,16 @@ class BittensorProvider:
             block_hash=block_hash,
         )
         raw = getattr(result, "value", result)
+        if raw is None:
+            # A completed NetworksAdded read always decodes to True or
+            # False. None means the query didn't actually finish (e.g. a
+            # batched response dropped under rate limiting), not that the
+            # subnet is missing — surface it as an upstream failure so
+            # retry/backoff handles it instead of misreporting a real
+            # subnet as absent.
+            raise RPCUnreachableError(
+                f"NetworksAdded query for subnet {netuid} returned no result at block {block_hash}"
+            )
         if raw is not True:
             raise UserError(
                 f"subnet {netuid} does not exist at block {block_hash}",

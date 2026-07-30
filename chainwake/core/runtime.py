@@ -104,6 +104,13 @@ ProviderErrorReason = Literal[
     "decode_failed",
 ]
 
+# Surfaced on every rate-limited provider error — JSON payload, --out
+# notifications, and human-TTY rendering all read this from the same
+# message field, so the upgrade path only needs to be written once.
+_BLOCKMACHINE_UPGRADE_HINT = (
+    "For higher Blockmachine limits, sign up at https://blockmachine.io and pass --api-key."
+)
+
 _DEFAULT_RUNTIME = backend_for("bt").runtime
 
 
@@ -2138,6 +2145,8 @@ class WatcherRunner:
         return 1
 
     async def _emit_provider_error(self, message: str, reason: ProviderErrorReason) -> int:
+        if reason == "rate_limited":
+            message = f"{message} {_BLOCKMACHINE_UPGRADE_HINT}"
         payload = ProviderErrorPayload(
             watcher=build_watcher(self._spec),
             condition=self._spec.condition,

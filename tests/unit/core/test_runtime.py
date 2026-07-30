@@ -1670,6 +1670,8 @@ class TestWatcherRunnerErrors:
         assert adapter.received[0].status == "provider_error"
         assert adapter.received[0].reason == "rate_limited"
         assert provider.read_observable.await_count == 9
+        assert "blockmachine.io" in adapter.received[0].message
+        assert "--api-key" in adapter.received[0].message
 
     async def test_unexpected_exception_returns_4_internal_error(self) -> None:
         spec = _make_spec()
