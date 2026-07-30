@@ -172,18 +172,15 @@ class TestProviderErrorHints:
             reason=cast("provider_error_reason_t", reason),
         )
 
-    def test_rate_limited_hint_mentions_retry_and_blockmachine_upgrade(self) -> None:
+    def test_rate_limited_hint_mentions_retry(self) -> None:
         from chainwake.output.render import render_human  # noqa: PLC0415
 
+        # WatcherRunner._emit_provider_error appends the Blockmachine upgrade
+        # pitch to payload.message itself (see test_runtime.py), so every
+        # output path carries it once instead of render.py re-adding it here.
         out = render_human(self._make("rate_limited", "rate limit exceeded"))
         assert "rate limit exceeded" in out
-        assert "rate-limited" in out.lower()
-        assert "retrying" in out.lower()
-        assert out.splitlines()[-1] == (
-            "Provider rate-limited the request. Wait before retrying. "
-            "For higher Blockmachine limits, sign up at https://blockmachine.io "
-            "and pass --api-key."
-        )
+        assert out.splitlines()[-1] == "Wait before retrying."
 
     def test_rpc_unreachable_hint_mentions_url_and_network(self) -> None:
         from chainwake.output.render import render_human  # noqa: PLC0415

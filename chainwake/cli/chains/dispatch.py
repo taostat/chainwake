@@ -207,6 +207,8 @@ async def _run_with_error_handling(  # noqa: PLR0911, PLR0912, PLR0915
                 max_ru=spec.max_ru,
             ),
             runtime=backend.runtime,
+            rpc_url=rpc_url,
+            api_key=api_key,
         )
         return await runner.run()
     except asyncio.CancelledError:

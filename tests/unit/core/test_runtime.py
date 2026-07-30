@@ -27,6 +27,8 @@ from chainwake.core.primitives.threshold import ThresholdOperator, ThresholdPrim
 from chainwake.core.registry import ObservationDriver, lookup
 from chainwake.core.retry import RateLimitGuard
 from chainwake.core.runtime import (
+    _BLOCKMACHINE_SIGNUP_HINT,
+    _BLOCKMACHINE_UPGRADE_HINT,
     WatcherRunner,
     WatcherSpec,
     _estimate_ru_per_day,
@@ -50,6 +52,7 @@ from chainwake.providers.base import (
     ObservableValue,
     StorageUpdate,
 )
+from chainwake.providers.bittensor import DEFAULT_RPC_URL as BT_DEFAULT_RPC_URL
 from chainwake.providers.bittensor import BittensorProvider
 
 pytestmark = pytest.mark.unit
@@ -1649,7 +1652,7 @@ class TestWatcherRunnerErrors:
         assert adapter.received[0].status == "timeout"
         assert provider.read_observable.await_count == 1
 
-    async def test_persistent_rate_limit_stops_without_hot_loop(self) -> None:
+    async def test_persistent_rate_limit_on_default_endpoint_suggests_signup(self) -> None:
         spec = _make_spec(max_runtime_seconds=300.0, poll_seconds=0.0001)
         adapter = _RecordingAdapter()
         provider = _make_provider()
@@ -1661,6 +1664,7 @@ class TestWatcherRunnerErrors:
             primitive=_make_primitive(),
             adapters=[adapter],
             budget=Budget(max_runtime_seconds=300.0),
+            rpc_url=BT_DEFAULT_RPC_URL,
         )
 
         with patch.object(WatcherRunner, "_interruptible_sleep", new_callable=AsyncMock):
@@ -1670,6 +1674,52 @@ class TestWatcherRunnerErrors:
         assert adapter.received[0].status == "provider_error"
         assert adapter.received[0].reason == "rate_limited"
         assert provider.read_observable.await_count == 9
+        assert adapter.received[0].message == f"free-tier limit {_BLOCKMACHINE_SIGNUP_HINT}"
+
+    async def test_persistent_rate_limit_with_api_key_suggests_upgrade(self) -> None:
+        spec = _make_spec(max_runtime_seconds=300.0, poll_seconds=0.0001)
+        adapter = _RecordingAdapter()
+        provider = _make_provider()
+        provider.read_observable = AsyncMock(side_effect=RateLimitError("free-tier limit"))
+        runner = WatcherRunner(
+            spec,
+            entry=lookup("subnet.{netuid}.pool.price"),
+            provider=provider,
+            primitive=_make_primitive(),
+            adapters=[adapter],
+            budget=Budget(max_runtime_seconds=300.0),
+            rpc_url=BT_DEFAULT_RPC_URL,
+            api_key="already-have-one",
+        )
+
+        with patch.object(WatcherRunner, "_interruptible_sleep", new_callable=AsyncMock):
+            code = await runner.run()
+
+        assert code == 3
+        assert adapter.received[0].message == f"free-tier limit {_BLOCKMACHINE_UPGRADE_HINT}"
+
+    async def test_persistent_rate_limit_on_custom_endpoint_has_no_blockmachine_hint(
+        self,
+    ) -> None:
+        spec = _make_spec(max_runtime_seconds=300.0, poll_seconds=0.0001)
+        adapter = _RecordingAdapter()
+        provider = _make_provider()
+        provider.read_observable = AsyncMock(side_effect=RateLimitError("free-tier limit"))
+        runner = WatcherRunner(
+            spec,
+            entry=lookup("subnet.{netuid}.pool.price"),
+            provider=provider,
+            primitive=_make_primitive(),
+            adapters=[adapter],
+            budget=Budget(max_runtime_seconds=300.0),
+            rpc_url="wss://my-own-node.example",
+        )
+
+        with patch.object(WatcherRunner, "_interruptible_sleep", new_callable=AsyncMock):
+            code = await runner.run()
+
+        assert code == 3
+        assert adapter.received[0].message == "free-tier limit"
 
     async def test_unexpected_exception_returns_4_internal_error(self) -> None:
         spec = _make_spec()

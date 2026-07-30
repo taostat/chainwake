@@ -25,6 +25,7 @@ from chainwake.core.errors import (
     RPCUnreachableError,
     SubscriptionFailedError,
     TxNotFoundInHorizonError,
+    UserError,
 )
 from chainwake.core.registry import ObservationDriver, all_entries, lookup
 from chainwake.providers.base import (
@@ -2357,6 +2358,49 @@ class _DynamicInfoSubstrate:
         if storage_fn == "NetworksAdded":
             return _ScaleType(True)
         return _ScaleType(0)
+
+
+class _NetworksAddedSubstrate:
+    """Stand-in returning a fixed ``NetworksAdded`` value for every query."""
+
+    def __init__(self, value: object) -> None:
+        self._value = value
+
+    async def query(
+        self,
+        module: str,
+        storage_fn: str,
+        params: list[object] | None = None,
+        block_hash: str = "",
+    ) -> object:
+        assert storage_fn == "NetworksAdded"
+        return self._value
+
+
+@pytest.mark.asyncio
+async def test_require_subnet_false_raises_user_error() -> None:
+    """A genuinely unregistered netuid decodes to False, not None."""
+    provider = BittensorProvider()
+    provider._substrate = cast(AsyncSubstrateInterface, _NetworksAddedSubstrate(_ScaleType(False)))
+
+    with pytest.raises(UserError, match="subnet 19 does not exist"):
+        await provider._require_subnet(19, "0xabc")
+
+
+@pytest.mark.asyncio
+async def test_require_subnet_none_raises_rpc_unreachable_not_user_error() -> None:
+    """A dropped/incomplete response must not be mistaken for a missing subnet.
+
+    Regression: under rate limiting, a batched ``NetworksAdded`` query can
+    come back with no result at all rather than raising. Treating that as
+    "subnet does not exist" skips retry/backoff and reports a real subnet
+    as absent.
+    """
+    provider = BittensorProvider()
+    provider._substrate = cast(AsyncSubstrateInterface, _NetworksAddedSubstrate(None))
+
+    with pytest.raises(RPCUnreachableError, match="returned no result"):
+        await provider._require_subnet(19, "0xabc")
 
 
 @pytest.mark.asyncio

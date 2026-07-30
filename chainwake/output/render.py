@@ -245,10 +245,10 @@ def _render_user_error(payload: UserErrorPayload) -> str:
 _PROVIDER_ERROR_HINTS: dict[str, str] = {
     "rpc_unreachable": "Check your --rpc-url and network connectivity.",
     "subscription_failed": "Check your --rpc-url and network connectivity.",
-    "rate_limited": (
-        "Provider rate-limited the request. Wait before retrying. "
-        "For higher Blockmachine limits, sign up at https://blockmachine.io and pass --api-key."
-    ),
+    # The Blockmachine upgrade pitch is already appended to payload.message
+    # by WatcherRunner._emit_provider_error so every output path (JSON,
+    # --out adapters, this renderer) carries it exactly once.
+    "rate_limited": "Wait before retrying.",
 }
 
 
