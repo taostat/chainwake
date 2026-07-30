@@ -27,6 +27,8 @@ from chainwake.core.primitives.threshold import ThresholdOperator, ThresholdPrim
 from chainwake.core.registry import ObservationDriver, lookup
 from chainwake.core.retry import RateLimitGuard
 from chainwake.core.runtime import (
+    _BLOCKMACHINE_SIGNUP_HINT,
+    _BLOCKMACHINE_UPGRADE_HINT,
     WatcherRunner,
     WatcherSpec,
     _estimate_ru_per_day,
@@ -1672,9 +1674,7 @@ class TestWatcherRunnerErrors:
         assert adapter.received[0].status == "provider_error"
         assert adapter.received[0].reason == "rate_limited"
         assert provider.read_observable.await_count == 9
-        assert "sign up" in adapter.received[0].message
-        assert "blockmachine.io" in adapter.received[0].message
-        assert "--api-key" in adapter.received[0].message
+        assert adapter.received[0].message == f"free-tier limit {_BLOCKMACHINE_SIGNUP_HINT}"
 
     async def test_persistent_rate_limit_with_api_key_suggests_upgrade(self) -> None:
         spec = _make_spec(max_runtime_seconds=300.0, poll_seconds=0.0001)
@@ -1696,9 +1696,7 @@ class TestWatcherRunnerErrors:
             code = await runner.run()
 
         assert code == 3
-        assert "upgrade" in adapter.received[0].message.lower()
-        assert "sign up" not in adapter.received[0].message
-        assert "blockmachine.io" in adapter.received[0].message
+        assert adapter.received[0].message == f"free-tier limit {_BLOCKMACHINE_UPGRADE_HINT}"
 
     async def test_persistent_rate_limit_on_custom_endpoint_has_no_blockmachine_hint(
         self,
@@ -1722,7 +1720,6 @@ class TestWatcherRunnerErrors:
 
         assert code == 3
         assert adapter.received[0].message == "free-tier limit"
-        assert "blockmachine" not in adapter.received[0].message.lower()
 
     async def test_unexpected_exception_returns_4_internal_error(self) -> None:
         spec = _make_spec()
