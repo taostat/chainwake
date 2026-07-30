@@ -26,7 +26,7 @@ from collections.abc import AsyncIterator, Callable, Coroutine
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import blake2b
-from typing import Any, Final, cast
+from typing import Any, Final, NoReturn, cast
 
 from async_substrate_interface import AsyncSubstrateInterface
 from async_substrate_interface.errors import SubstrateRequestException
@@ -43,6 +43,7 @@ from chainwake.core.errors import (
     UserError,
 )
 from chainwake.core.registry import FRIENDLY_EVENT_MAP, lookup_rendered
+from chainwake.core.retry import RateLimitGuard
 from chainwake.core.ss58 import BITTENSOR_SS58_FORMAT, validate_bittensor_ss58
 from chainwake.core.tx_hash import validate_tx_hash
 from chainwake.providers.base import (
@@ -90,6 +91,10 @@ NEURON_HOTKEY_INDEX: Final[int] = 2
 _MECHANISM_STORAGE_STRIDE: Final[int] = 4_096
 _MAX_MECHANISM_ID: Final[int] = 15
 _MAX_NETUID: Final[int] = 65_535
+# Root network. Present in NetworksAdded on every Subtensor chain from
+# genesis, which makes it a canary: a True read for root proves the
+# endpoint is decoding storage honestly right now.
+_ROOT_NETUID: Final[int] = 0
 _CHAINHEAD_UNPIN_BATCH: Final[int] = 32
 _STORAGE_CHANGE_FIELDS: Final[int] = 2
 
@@ -914,14 +919,8 @@ class BittensorProvider:
             )
         return netuid
 
-    async def _require_subnet(self, netuid: int, block_hash: str) -> None:
-        """Fail honestly when a ValueQuery-backed read targets no subnet.
-
-        Most Subtensor maps return their type's default for a missing key.
-        Without checking ``NetworksAdded`` first, a nonexistent subnet is
-        indistinguishable from a real subnet whose metric is zero and can
-        immediately satisfy a threshold wake.
-        """
+    async def _read_networks_added(self, netuid: int, block_hash: str) -> object:
+        """Raw ``NetworksAdded`` read: ``True``/``False`` when decoded, ``None`` when dropped."""
         substrate = self._connected
         result = await substrate.query(
             "SubtensorModule",
@@ -929,22 +928,77 @@ class BittensorProvider:
             [netuid],
             block_hash=block_hash,
         )
-        raw = getattr(result, "value", result)
+        return getattr(result, "value", result)
+
+    async def _require_subnet(self, netuid: int, block_hash: str) -> None:
+        """Fail honestly when a ValueQuery-backed read targets no subnet.
+
+        Most Subtensor maps return their type's default for a missing key.
+        Without checking ``NetworksAdded`` first, a nonexistent subnet is
+        indistinguishable from a real subnet whose metric is zero and can
+        immediately satisfy a threshold wake.
+
+        A single False/None read is not trustworthy under contention: a
+        rate-limited sibling query elsewhere in the same batch can leave
+        this query with no completed response (None) or a silently
+        substituted decoded default (False) rather than a genuine answer —
+        reproduced by firing dozens of concurrent watchers against a real
+        anonymous endpoint, where the condition persisted well past a single
+        retry. Root (netuid 0) exists on every Subtensor chain, so a canary
+        read against it disambiguates: a True canary means the endpoint is
+        answering honestly right now, so the non-True target read is
+        authoritative and fails immediately. A non-True canary is the real
+        contention signal — reconfirm the target with the same bounded
+        backoff used for genuine rate-limit errors elsewhere (250ms doubling
+        to 32s, 8 attempts, ~64s total) before committing to an answer.
+        When the target IS root there is no more-trustworthy key to check
+        against, so it goes straight to the backoff loop.
+
+        With --max-runtime set, WatcherRunner._call_with_deadline bounds
+        this loop (and the outer transient retries) to the remaining runtime
+        budget. Without it there is no deadline: the None-path
+        RPCUnreachableError is transient-classified, so the outer
+        with_transient_retry re-enters this ~64s loop without limit —
+        consistent with the documented retry-indefinitely policy for
+        transient errors.
+        """
+        raw = await self._read_networks_added(netuid, block_hash)
+        if raw is True:
+            return
+        if netuid != _ROOT_NETUID:
+            canary = await self._read_networks_added(_ROOT_NETUID, block_hash)
+            if canary is True:
+                self._raise_subnet_verdict(netuid, block_hash, raw)
+        guard = RateLimitGuard()
+        while True:
+            reason = "no result" if raw is None else "an unconfirmed False"
+            should_retry = await guard.handle(
+                RateLimitError(
+                    f"NetworksAdded read for subnet {netuid} could not be confirmed "
+                    f"(returned {reason}); reconfirming before treating it as authoritative"
+                )
+            )
+            if not should_retry:
+                break
+            raw = await self._read_networks_added(netuid, block_hash)
+            if raw is True:
+                return
+        self._raise_subnet_verdict(netuid, block_hash, raw)
+
+    def _raise_subnet_verdict(self, netuid: int, block_hash: str, raw: object) -> NoReturn:
+        """Commit to a trusted non-True ``NetworksAdded`` read.
+
+        ``None`` means the query never completed upstream; ``False`` (or any
+        other decoded value) means the subnet is genuinely absent.
+        """
         if raw is None:
-            # A completed NetworksAdded read always decodes to True or
-            # False. None means the query didn't actually finish (e.g. a
-            # batched response dropped under rate limiting), not that the
-            # subnet is missing — surface it as an upstream failure so
-            # retry/backoff handles it instead of misreporting a real
-            # subnet as absent.
             raise RPCUnreachableError(
                 f"NetworksAdded query for subnet {netuid} returned no result at block {block_hash}"
             )
-        if raw is not True:
-            raise UserError(
-                f"subnet {netuid} does not exist at block {block_hash}",
-                reason="invalid_path_params",
-            )
+        raise UserError(
+            f"subnet {netuid} does not exist at block {block_hash}",
+            reason="invalid_path_params",
+        )
 
     async def _require_neuron(self, netuid: int, hotkey: str, block_hash: str) -> int:
         """Return the registered uid or raise a typed invalid-entity error."""
