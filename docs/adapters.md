@@ -11,7 +11,7 @@ exits after the first match.
 match:
 
 ```sh
-chainwake bt subnet 19 price --below 0.05 \
+chainwake bt subnet 19 price --above 0.10 \
   --out "tgram://${TG_BOT_TOKEN}/${TG_CHAT_ID}" \
   --out "file:///var/log/chainwake.jsonl" \
   --out stream
@@ -29,7 +29,7 @@ Writes the full JSON payload to stdout and exits. Exit code reflects the match
 status. This is what agents and scripts parse.
 
 ```sh
-result=$(chainwake bt subnet 19 price --below 0.05 --max-runtime 5m --json)
+result=$(chainwake bt subnet 19 price --above 0.10 --max-runtime 5m --json)
 echo "$result" | jq '.observed.value'
 ```
 
@@ -140,7 +140,7 @@ Format: `tgram://<bot_token>/<chat_id>`
 TG_BOT_TOKEN=7123456789:AAFxxxxxxxxxxxxxxxx
 TG_CHAT_ID=123456789
 
-chainwake bt subnet 19 price --below 0.05 --max-runtime 5s \
+chainwake bt subnet 19 price --above 0.10 --max-runtime 5s \
   --out "tgram://${TG_BOT_TOKEN}/${TG_CHAT_ID}"
 ```
 
@@ -161,7 +161,7 @@ export TG_CHAT_ID=123456789
 Then reference it in commands:
 
 ```sh
-chainwake bt subnet 19 price --below 0.05 \
+chainwake bt subnet 19 price --above 0.10 \
   --out "tgram://${TG_BOT_TOKEN}/${TG_CHAT_ID}" \
   --max-runtime 4h
 ```
@@ -267,7 +267,7 @@ Fan out to multiple destinations with repeated `--out` flags. All adapters
 receive the same payload simultaneously:
 
 ```sh
-chainwake bt subnet 19 price --drop-pct 5 --window-time 1h \
+chainwake bt subnet 19 price --rise-pct 5 --window-time 1h \
   --out "tgram://${TG_BOT_TOKEN}/${TG_CHAT_ID}" \
   --out "file:///var/log/chainwake.jsonl" \
   --out stream \
@@ -295,7 +295,7 @@ DISCORD_WEBHOOK_TOKEN=xxxxxxxxxx-yyyyyyy
 source .env
 
 # Use it
-chainwake bt subnet 19 price --below 0.05 \
+chainwake bt subnet 19 price --above 0.10 \
   --out "tgram://${TG_BOT_TOKEN}/${TG_CHAT_ID}"
 ```
 

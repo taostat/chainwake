@@ -14,7 +14,7 @@ No model or agent loop runs while Chainwake is waiting.
 
 ```sh
 chainwake bt subnet 19 price \
-  --below 0.05 \
+  --above 0.10 \
   --max-runtime 4h \
   --json
 ```
@@ -43,7 +43,7 @@ Have OpenClaw call `exec` with:
 
 ```json
 {
-  "command": "chainwake --json bt subnet 19 price --below 0.05",
+  "command": "chainwake --json bt subnet 19 price --above 0.10",
   "background": true,
   "timeout": 0
 }
@@ -83,7 +83,7 @@ terminal(
         'UV_CACHE_DIR="$HERMES_HOME/cache/uv" '
         'env -u VIRTUAL_ENV uv run --no-dev --frozen '
         '--project "$HERMES_HOME/plugins/blockmachine-chainwake" '
-        "chainwake --json bt subnet 19 price --below 0.05"
+        "chainwake --json bt subnet 19 price --above 0.10"
     ),
     background=True,
     notify_on_complete=True,
@@ -189,7 +189,7 @@ Persist the chain watcher itself with:
 ```sh
 chainwake --json --durable \
   --context "Tell me what matched and include the observed block." \
-  bt subnet 19 price --below 0.05
+  bt subnet 19 price --above 0.10
 ```
 
 The command returns a job id immediately. Have the host use this as its

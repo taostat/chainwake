@@ -24,20 +24,21 @@ All examples below use these variables.
 
 ---
 
-## Scenario 1: Price drops below a target (threshold alert)
+## Scenario 1: Price rises above a target (threshold alert)
 
-You want a Telegram ping when SN19 alpha drops below 0.05 TAO.
+You want a Telegram ping when SN19 alpha rises above 0.10 TAO so you can decide
+whether to take profit.
 
 ```sh
-chainwake bt subnet 19 price --below 0.05 \
+chainwake bt subnet 19 price --above 0.10 \
   --out "tgram://${TG_BOT_TOKEN}/${TG_CHAT_ID}" \
   --max-runtime 24h
 ```
 
 The watcher polls at the chain's natural per-block cadence. When the price
-crosses below 0.05, it sends
+crosses above 0.10, it sends
 a Telegram message containing the match payload (block number, price, timestamp)
-and exits. If the price does not drop below 0.05 within 24 hours, it exits
+and exits. If the price does not rise above 0.10 within 24 hours, it exits
 silently.
 
 To keep watching across multiple days, use `--out stream` to prevent the watcher
@@ -46,7 +47,7 @@ on exit:
 
 ```sh
 while true; do
-  chainwake bt subnet 19 price --below 0.05 \
+  chainwake bt subnet 19 price --above 0.10 \
     --out "tgram://${TG_BOT_TOKEN}/${TG_CHAT_ID}" \
     --max-runtime 24h
   sleep 5

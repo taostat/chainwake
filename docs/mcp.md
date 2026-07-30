@@ -92,7 +92,7 @@ For a persisted watcher, use the CLI job surface alongside MCP:
 ```sh
 chainwake --json --durable \
   --context "Return this monitoring request with the match." \
-  bt subnet 19 price --below 0.05
+  bt subnet 19 price --above 0.10
 chainwake --json jobs wait <job-id>
 ```
 

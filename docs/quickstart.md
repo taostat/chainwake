@@ -52,14 +52,14 @@ from a stalled process.
 
 ---
 
-## 1. Threshold — wait until subnet 19 price drops below 0.05 TAO
+## 1. Threshold — wait until subnet 19 price rises above 0.10 TAO
 
 ```sh
-chainwake bt subnet 19 price --below 0.05 --max-runtime 5m
+chainwake bt subnet 19 price --above 0.10 --max-runtime 5m
 ```
 
 chainwake polls subnet 19's alpha price at its natural chain cadence (once per
-block, about 12 seconds on Bittensor mainnet). When the price drops below 0.05
+block, about 12 seconds on Bittensor mainnet). When the price rises above 0.10
 TAO it exits with code `0` and writes to stdout:
 
 ```json
@@ -72,12 +72,12 @@ TAO it exits with code `0` and writes to stdout:
     "sub_resource": "pool.price",
     "name": null,
     "primitive": "threshold",
-    "invocation": ["chainwake", "bt", "subnet", "19", "price", "--below", "0.05", "--max-runtime", "5m"]
+    "invocation": ["chainwake", "bt", "subnet", "19", "price", "--above", "0.10", "--max-runtime", "5m"]
   },
-  "condition": { "operator": "below", "target": 0.05 },
+  "condition": { "operator": "above", "target": 0.10 },
   "observed": {
     "path": "subnet.19.pool.price",
-    "value": 0.0487,
+    "value": 0.1042,
     "block": 4291820,
     "block_hash": "0xabc...",
     "timestamp": "2026-05-06T10:00:00Z"
@@ -96,14 +96,14 @@ If the condition does not fire within 5 minutes, exit code is `1` with
 
 ---
 
-## 2. Delta — wait until price drops 5% within a 1-hour window
+## 2. Delta — wait until price rises 5% within a 1-hour window
 
 ```sh
-chainwake bt subnet 19 price --drop-pct 5 --window-time 1h --max-runtime 2h
+chainwake bt subnet 19 price --rise-pct 5 --window-time 1h --max-runtime 2h
 ```
 
 chainwake holds a rolling 1-hour price window. It fires when the oldest sample
-in that window is more than 5% above the current price. The `--max-runtime`
+in that window is more than 5% below the current price. The `--max-runtime`
 guards against running indefinitely.
 
 Use `--window-blocks 300` for a block-count window, or `--window-epochs 1` for

@@ -48,7 +48,7 @@ Durable mode uses the same watcher grammar and validation as a direct wait:
 ```sh
 chainwake --json --durable \
   --context "Report the observed subnet price and block." \
-  bt subnet 19 price --below 0.05
+  bt subnet 19 price --above 0.10
 ```
 
 The command returns immediately with a persistent job record. Manage it with:
@@ -256,10 +256,10 @@ Observation timing is selected automatically from the wake's registry policy.
 Use `--max-runtime` to bound elapsed time and `--max-ru` to bound the
 registry-estimated observation cost.
 
-Example — wait until SN19 price drops below 0.05, timeout after 1 hour:
+Example — wait until SN19 price rises above 0.10, timeout after 1 hour:
 
 ```sh
-chainwake bt subnet 19 price --below 0.05 --max-runtime 1h
+chainwake bt subnet 19 price --above 0.10 --max-runtime 1h
 ```
 
 The following pool and subnet metrics use the same threshold/delta flags and

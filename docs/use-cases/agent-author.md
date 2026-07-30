@@ -17,13 +17,13 @@ No polling loop or JSON parsing step belongs in the agent prompt.
 
 Tell your agent:
 
-> Watch Bittensor subnet 19. Wake when its price falls below 0.05 TAO, then
+> Watch Bittensor subnet 19. Wake when its price rises above 0.10 TAO, then
 > explain what happened.
 
 The agent runs:
 
 ```sh
-chainwake bt subnet 19 price --below 0.05 --json
+chainwake bt subnet 19 price --above 0.10 --json
 ```
 
 When Chainwake exits, the host returns its output to the same agent. The agent
@@ -33,7 +33,7 @@ asked it to keep monitoring.
 Add `--max-runtime` when the request has a real deadline:
 
 ```sh
-chainwake bt subnet 19 price --below 0.05 --max-runtime 12h --json
+chainwake bt subnet 19 price --above 0.10 --max-runtime 12h --json
 ```
 
 The limit belongs to the monitoring request, not to the agent or tool-call
@@ -43,13 +43,13 @@ timeout.
 
 Tell your agent:
 
-> Watch subnet 19 for a 5% price drop within one hour. When it happens, explain
+> Watch subnet 19 for a 5% price rise within one hour. When it happens, explain
 > the move and decide whether it needs investigation. Do not trade without my
 > approval.
 
 ```sh
 chainwake bt subnet 19 price \
-  --drop-pct 5 --window-time 1h --json
+  --rise-pct 5 --window-time 1h --json
 ```
 
 The wake result includes the previous value, current value, percentage move,
@@ -98,7 +98,7 @@ If several independent conditions matter, the agent can start several
 background wakes:
 
 ```sh
-chainwake bt subnet 19 price --drop-pct 5 --window-time 1h --json
+chainwake bt subnet 19 price --rise-pct 5 --window-time 1h --json
 chainwake bt neuron 19 5Fxxx... last-update --silent-for 10blocks --json
 chainwake bt event --type subnet-registered --json
 ```
@@ -142,7 +142,7 @@ gateway:
 ```sh
 chainwake --json --durable \
   --context "Explain what matched and what I should do next." \
-  bt subnet 19 price --below 0.05
+  bt subnet 19 price --above 0.10
 ```
 
 The context is returned with the completed job. The host can attach a
