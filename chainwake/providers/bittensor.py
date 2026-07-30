@@ -46,6 +46,7 @@ from chainwake.core.registry import FRIENDLY_EVENT_MAP, lookup_rendered
 from chainwake.core.retry import RateLimitGuard
 from chainwake.core.ss58 import BITTENSOR_SS58_FORMAT, validate_bittensor_ss58
 from chainwake.core.tx_hash import validate_tx_hash
+from chainwake.providers import _substrate_patch
 from chainwake.providers.base import (
     BlockRef,
     Cadence,
@@ -58,6 +59,8 @@ from chainwake.providers.base import (
     TxFinalityStatus,
 )
 from chainwake.providers.market import MarketPriceFeed, NativeAsset
+
+_substrate_patch.apply()
 
 DEFAULT_RPC_URL: Final[str] = "wss://rpc.blockmachine.io"
 SS58_FORMAT: Final[int] = BITTENSOR_SS58_FORMAT
