@@ -95,7 +95,7 @@ To use your own endpoint:
 export CHAINWAKE_BT_RPC_URL=wss://your-node:9944
 
 # CLI flag (per-command override, highest precedence)
-chainwake bt subnet 19 price --below 0.05 --rpc-url wss://your-node:9944
+chainwake bt subnet 19 price --above 0.10 --rpc-url wss://your-node:9944
 ```
 
 Precedence order (highest to lowest):
@@ -141,7 +141,7 @@ export CHAINWAKE_BT_API_KEY=your_key_here
 export CHAINWAKE_API_KEY=your_key_here
 
 # CLI flag
-chainwake bt subnet 19 price --below 0.05 --api-key your_key_here
+chainwake bt subnet 19 price --above 0.10 --api-key your_key_here
 ```
 
 Precedence order:

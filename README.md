@@ -67,8 +67,8 @@ Wait for a Bittensor subnet price to cross a threshold, or move 5% within an
 hour:
 
 ```sh
-chainwake bt subnet 19 price --below 0.05
-chainwake bt subnet 19 price --drop-pct 5 --window-time 1h
+chainwake bt subnet 19 price --above 0.10
+chainwake bt subnet 19 price --rise-pct 5 --window-time 1h
 ```
 
 Watch TAO/USD directly:
@@ -137,9 +137,9 @@ A matched watcher exits `0` with stdout:
                "sub_resource": "pool.price", "name": null,
                "primitive": "threshold",
                "invocation": ["chainwake", "bt", "subnet", "19", "price",
-                              "--below", "0.05"] },
-  "condition": { "operator": "below", "target": 0.05 },
-  "observed": { "path": "subnet.19.pool.price", "value": 0.0487,
+                              "--above", "0.10"] },
+  "condition": { "operator": "above", "target": 0.10 },
+  "observed": { "path": "subnet.19.pool.price", "value": 0.1042,
                 "block": 4291820, "block_hash": "0xabc...",
                 "timestamp": "2026-05-06T10:00:00Z" },
   "budget": { "runtime_ms": 3210, "rpc_calls": 3, "estimated_ru_consumed": 3 },
@@ -174,13 +174,13 @@ long-held MCP request. See the
 
 Tell your agent what to watch and what to do when it wakes:
 
-> Watch subnet 19's price. If it falls below 0.05 TAO, explain what happened
+> Watch subnet 19's price. If it rises above 0.10 TAO, explain what happened
 > and tell me the observed block.
 
 The agent launches one background command:
 
 ```sh
-chainwake bt subnet 19 price --below 0.05 --max-runtime 5m --json
+chainwake bt subnet 19 price --above 0.10 --max-runtime 5m --json
 ```
 
 When it exits, the host resumes the agent with the complete result. The LLM
@@ -200,7 +200,7 @@ the job id, and exits immediately:
 ```sh
 chainwake --json --durable \
   --context "Tell me the observed price and block." \
-  bt subnet 19 price --below 0.05
+  bt subnet 19 price --above 0.10
 
 chainwake --json jobs wait <job-id>   # blocks without polling the chain
 ```
@@ -217,9 +217,9 @@ Route results anywhere apprise can deliver (~100 destinations: Telegram,
 Discord, Slack, email, webhooks):
 
 ```sh
-chainwake bt subnet 19 price --below 0.05 --out "tgram://bottoken/chatid"
-chainwake bt subnet 19 price --below 0.05 --out stream            # NDJSON, keep running
-chainwake bt subnet 19 price --below 0.05 --out file:///tmp/w.ndjson
+chainwake bt subnet 19 price --above 0.10 --out "tgram://bottoken/chatid"
+chainwake bt subnet 19 price --above 0.10 --out stream            # NDJSON, keep running
+chainwake bt subnet 19 price --above 0.10 --out file:///tmp/w.ndjson
 ```
 
 `--out` is repeatable. See the

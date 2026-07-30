@@ -109,7 +109,7 @@ Run one Chainwake CLI watcher through OpenClaw's `exec` tool:
 
 ```json
 {
-  "command": "chainwake --json bt subnet 19 price --below 0.05",
+  "command": "chainwake --json bt subnet 19 price --above 0.10",
   "background": true,
   "timeout": 0
 }
@@ -159,13 +159,13 @@ user that the current OpenClaw runtime cannot provide the requested semantics.
 
 ## Example prompt
 
-> Use Chainwake to wake me when subnet 19's price falls below 0.05 TAO. Do not
+> Use Chainwake to wake me when subnet 19's price rises above 0.10 TAO. Do not
 > poll. When it fires, tell me the observed price and block.
 
 Run:
 
 ```text
-chainwake --json bt subnet 19 price --below 0.05
+chainwake --json bt subnet 19 price --above 0.10
 ```
 
 ## Durability boundary
@@ -179,7 +179,7 @@ Persist the watcher independently when required:
 ```text
 chainwake --json --durable \
   --context "Tell me the observed price and block." \
-  bt subnet 19 price --below 0.05
+  bt subnet 19 price --above 0.10
 ```
 
 Then run `chainwake --json jobs wait <job-id>` with `background: true` and

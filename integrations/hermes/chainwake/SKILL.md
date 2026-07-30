@@ -130,7 +130,7 @@ terminal(
         'UV_CACHE_DIR="$HERMES_HOME/cache/uv" '
         'env -u VIRTUAL_ENV uv run --no-dev --frozen --project '
         '"$HERMES_HOME/plugins/blockmachine-chainwake" '
-        "chainwake --json bt subnet 19 price --below 0.05"
+        "chainwake --json bt subnet 19 price --above 0.10"
     ),
     background=True,
     notify_on_complete=True,
@@ -183,7 +183,7 @@ Then handle `status`:
 
 ## Example prompt
 
-> Use Chainwake to wake me when subnet 19's price falls below 0.05 TAO. Do not
+> Use Chainwake to wake me when subnet 19's price rises above 0.10 TAO. Do not
 > poll. When it fires, tell me the observed price and block.
 
 Run:
@@ -192,7 +192,7 @@ Run:
 UV_CACHE_DIR="$HERMES_HOME/cache/uv" env -u VIRTUAL_ENV \
   uv run --no-dev --frozen \
   --project "$HERMES_HOME/plugins/blockmachine-chainwake" \
-  chainwake --json bt subnet 19 price --below 0.05
+  chainwake --json bt subnet 19 price --above 0.10
 ```
 
 ## Durability boundary
@@ -209,7 +209,7 @@ UV_CACHE_DIR="$HERMES_HOME/cache/uv" env -u VIRTUAL_ENV \
   --project "$HERMES_HOME/plugins/blockmachine-chainwake" \
   chainwake --json --durable \
   --context "Tell me the observed price and block." \
-  bt subnet 19 price --below 0.05
+  bt subnet 19 price --above 0.10
 ```
 
 Then attach Hermes' background terminal completion to:
