@@ -104,12 +104,30 @@ ProviderErrorReason = Literal[
     "decode_failed",
 ]
 
-# Surfaced on every rate-limited provider error — JSON payload, --out
-# notifications, and human-TTY rendering all read this from the same
-# message field, so the upgrade path only needs to be written once.
-_BLOCKMACHINE_UPGRADE_HINT = (
+# Surfaced on rate-limited provider errors, but only when the watcher was
+# actually talking to Blockmachine's own default endpoint — a third-party or
+# self-hosted RPC getting rate limited has nothing to do with Blockmachine.
+# JSON payload, --out notifications, and human-TTY rendering all read this
+# from the same message field, so the copy only needs to be written once.
+_BLOCKMACHINE_SIGNUP_HINT = (
     "For higher Blockmachine limits, sign up at https://blockmachine.io and pass --api-key."
 )
+_BLOCKMACHINE_UPGRADE_HINT = (
+    "Still rate-limited with an API key set? Upgrade your Blockmachine plan "
+    "at https://blockmachine.io."
+)
+
+
+def _default_rpc_url_for(chain: ChainAlias) -> str:
+    """Return Blockmachine's own default endpoint for ``chain``."""
+    if chain == "bt":
+        from chainwake.providers.bittensor import DEFAULT_RPC_URL  # noqa: PLC0415
+
+        return DEFAULT_RPC_URL
+    from chainwake.providers.evm import profile_for  # noqa: PLC0415
+
+    return profile_for(chain).default_rpc
+
 
 _DEFAULT_RUNTIME = backend_for("bt").runtime
 
@@ -784,6 +802,8 @@ class WatcherRunner:
         budget: Budget,
         banner_stream: IO[str] | None = None,
         runtime: ChainRuntimeConfig | None = None,
+        rpc_url: str | None = None,
+        api_key: str | None = None,
     ) -> None:
         if not adapters:
             raise ValueError("WatcherRunner requires at least one adapter")
@@ -799,6 +819,11 @@ class WatcherRunner:
         self._budget = budget
         self._banner_stream = banner_stream
         self._runtime = runtime or backend_for(spec.chain).runtime
+        # Only used to scope the Blockmachine rate-limit hint to Blockmachine's
+        # own endpoints — not read for connection purposes (the provider is
+        # already connected by the time WatcherRunner is constructed).
+        self._rpc_url = rpc_url
+        self._api_key = api_key
         self._match_count = 0
         self._shutdown_event = asyncio.Event()
         # Effective poll is resolved once per run from spec + cadence in
@@ -2144,9 +2169,23 @@ class WatcherRunner:
         await self._dispatch(payload)
         return 1
 
+    def _rate_limit_hint(self) -> str | None:
+        """Blockmachine promo copy, scoped to Blockmachine's own endpoint.
+
+        A custom or third-party ``--rpc-url`` getting rate limited has
+        nothing to do with Blockmachine, so no hint is added. Against
+        Blockmachine's default endpoint: nudge anonymous callers to sign up
+        for a key, and nudge callers who already have a key to upgrade.
+        """
+        if self._rpc_url != _default_rpc_url_for(self._spec.chain):
+            return None
+        return _BLOCKMACHINE_UPGRADE_HINT if self._api_key else _BLOCKMACHINE_SIGNUP_HINT
+
     async def _emit_provider_error(self, message: str, reason: ProviderErrorReason) -> int:
         if reason == "rate_limited":
-            message = f"{message} {_BLOCKMACHINE_UPGRADE_HINT}"
+            hint = self._rate_limit_hint()
+            if hint:
+                message = f"{message} {hint}"
         payload = ProviderErrorPayload(
             watcher=build_watcher(self._spec),
             condition=self._spec.condition,
