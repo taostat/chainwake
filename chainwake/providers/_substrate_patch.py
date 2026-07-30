@@ -23,8 +23,20 @@ provider, not just that one.
 
 Fix: raise the same ``SubstrateRequestException`` this SDK already raises
 for its other error paths (see ``_make_rpc_request``'s subscription-failure
-branch) the instant a response carries an "error" key, before any
-default-value fallback runs.
+branch) the instant a response carries an "error" key *and* the call is
+about to fall through to the storage item's default — i.e. only inside the
+``value_scale_type and isinstance(storage_item, ScaleType)`` branch that
+actually has the swallowing bug.
+
+The raise is deliberately scoped that narrowly rather than firing for every
+"error" key unconditionally: ``rpc_request`` (async_substrate.py) calls
+``_make_rpc_request``/``_process_response`` without a ``value_scale_type``,
+and already has its own correct, more specific handling of error responses
+— a self-healing retry for "Failed to get runtime version" and a typed
+``StateDiscardedError`` for a pruned block. An unconditional raise here
+would pre-empt both, turning a recoverable retry into a hard failure. Those
+callers never reach the buggy default-fallback branch in the first place,
+so they don't need this patch and must not be touched by it.
 """
 
 from __future__ import annotations
@@ -33,6 +45,7 @@ from typing import Any
 
 from async_substrate_interface.async_substrate import AsyncSubstrateInterface
 from async_substrate_interface.errors import SubstrateRequestException
+from scalecodec.base import ScaleType
 
 _PATCHED_ATTR = "_chainwake_error_patch_applied"
 
@@ -50,12 +63,23 @@ def apply() -> None:
     async def _process_response_raising_on_error(
         self: AsyncSubstrateInterface,
         response: dict[str, Any],
-        *args: Any,
-        **kwargs: Any,
+        subscription_id: int | str,
+        value_scale_type: str | None = None,
+        storage_item: ScaleType | None = None,
+        result_handler: Any = None,
+        runtime: Any = None,
     ) -> tuple[Any, bool]:
-        if "error" in response:
+        if "error" in response and value_scale_type and isinstance(storage_item, ScaleType):
             raise SubstrateRequestException(str(response))
-        return await original(self, response, *args, **kwargs)
+        return await original(
+            self,
+            response,
+            subscription_id,
+            value_scale_type,
+            storage_item,
+            result_handler,
+            runtime=runtime,
+        )
 
     AsyncSubstrateInterface._process_response = _process_response_raising_on_error
     setattr(AsyncSubstrateInterface, _PATCHED_ATTR, True)
